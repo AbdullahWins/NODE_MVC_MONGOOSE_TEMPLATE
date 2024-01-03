@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const { Timekoto } = require("timekoto");
 const PPDModel = require("./PaymentPerDownloadModel");
 const { logger } = require("../services/loggers/Winston");
+const { InitiateToken } = require("../services/tokens/InitiateToken");
+const bcrypt = require("bcrypt");
 
 //get the payment rate per download
 const paymentDoc = async () => {
@@ -55,6 +57,87 @@ const userSchema = new mongoose.Schema({
     default: [],
   },
 });
+
+// static method for login
+userSchema.statics.login = async function ({ email, password, oneSignalId }) {
+  try {
+    if (!email || !password || !oneSignalId) {
+      return { error: "All fields are required" };
+    }
+
+    const user = await this.findOne({ email }).exec();
+
+    if (!user) {
+      return { error: "User not found" };
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user?.password);
+
+    if (!passwordMatch) {
+      return { error: "Invalid password" };
+    }
+
+    //update oneSignalId for the user
+    const updatedResult = await this.findOneAndUpdate(
+      { email },
+      { $set: { oneSignalId } },
+      { new: true }
+    );
+
+    if (!updatedResult) {
+      return { error: "User not found" };
+    }
+
+    logger.log("info", `User updated: ${updatedResult}`);
+
+    const token = InitiateToken(user._id);
+    logger.log("info", `User logged in: ${email}`);
+    return { token, user: updatedResult };
+  } catch (error) {
+    logger.log("error", error?.message);
+    return { error: "Internal server error" };
+  }
+};
+
+// static method for registration
+userSchema.statics.register = async function ({
+  email,
+  password,
+  oneSignalId,
+}) {
+  try {
+    //check if the required fields are present
+    if (!email || !password || !oneSignalId) {
+      return { error: "All fields are required" };
+    }
+
+    //check if the user already exists
+    const existingUserCheck = await this.findOne({ email }).exec();
+    if (existingUserCheck) {
+      return { error: "User already exists" };
+    }
+
+    //hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    //create a new user instance
+    const newUser = new this({
+      email,
+      password: hashedPassword,
+      oneSignalId,
+    });
+
+    //save the user to the database
+    await newUser.save();
+
+    //generate token
+    const token = InitiateToken(newUser._id);
+
+    return { message: "User created successfully", token, user: newUser };
+  } catch (error) {
+    return { error: "Internal server error" };
+  }
+};
 
 // Function to add myWallpapers of a user
 userSchema.methods.addMyWallpapers = async function (fileUrls) {

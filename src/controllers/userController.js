@@ -2,51 +2,28 @@
 
 const { ObjectId } = require("mongodb");
 const bcrypt = require("bcrypt");
-const { SendEmail } = require("../services/emails/SendEmail");
 const { uploadMultipleFiles } = require("../services/uploaders/fileUploader");
-const { InitiateToken } = require("../services/tokens/InitiateToken");
 const User = require("../models/UserModel");
-const { CreateOTP } = require("../services/otp/CreateOTP");
-const { SaveOTP } = require("../services/otp/SaveOTP");
-const { MatchOTP } = require("../services/otp/MatchOTP");
 const AccessValidator = require("../services/validators/AccessValidator");
 const {
   uploadMultipleFilesUsingUrls,
 } = require("../services/uploaders/fileUploaderUsingUrl");
 const { UserCleanup } = require("../services/userCleanup/UserCleanup");
 const { logger } = require("../services/loggers/Winston");
+const { SendOTP } = require("../services/otp/SendOTP");
+const { ValidatePasswordResetOTP } = require("../services/otp/ValidateOTP");
 
 //login using mongoose
 const LoginUser = async (req, res) => {
   try {
     const data = JSON.parse(req?.body?.data);
     const { email, password, oneSignalId } = data;
-    if ((!email || !password, !oneSignalId)) {
-      return res.status(400).json({ message: "All fields are required" });
+    const result = await User.login({ email, password, oneSignalId });
+    if (result?.error) {
+      return res.status(401).json({ message: result?.error });
+    } else {
+      return res.json(result);
     }
-    const user = await User.findOne({ email: email }).exec();
-    logger.log("info", JSON.stringify(user, null, 2));
-    if (!user) {
-      return res.status(404).json({ message: "user not found" });
-    }
-    const passwordMatch = await bcrypt.compare(password, user?.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: "Invalid password" });
-    }
-    //update one signal id to the user
-    const updatedResult = await User.findOneAndUpdate(
-      { email: email },
-      {
-        $set: { oneSignalId },
-      },
-      { new: true }
-    );
-    if (updatedResult === null) {
-      return res.status(404).send({ message: "User not found" });
-    }
-    logger.log("info", `User updated: ${updatedResult}`);
-    const token = InitiateToken(user?._id, 30);
-    return res.json({ token, user: updatedResult });
   } catch (error) {
     logger.log("error", error?.message);
     return res.status(500).json({ message: "Internal server error" });
@@ -57,36 +34,12 @@ const LoginUser = async (req, res) => {
 const RegisterUser = async (req, res) => {
   try {
     const { email, password, oneSignalId } = JSON.parse(req?.body?.data);
-
-    // Check if the required fields are present in the request
-    if (!email || !password || !oneSignalId) {
-      return res.status(400).json({ message: "All fields are required" });
+    const result = await User.register({ email, password, oneSignalId });
+    if (result?.error) {
+      return res.status(401).json({ message: result?.error });
+    } else {
+      return res.json(result);
     }
-
-    // Check if the user already exists
-    const existingUserCheck = await User.findOne({ email: email }).exec();
-    if (existingUserCheck) {
-      return res.status(409).json({ message: "User already exists" });
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create a new user instance
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-      oneSignalId,
-    });
-
-    // Save the user to the database
-    await newUser.save();
-    //generate token
-    const token = InitiateToken(newUser?._id, 30);
-
-    return res
-      .status(201)
-      .json({ message: "User created successfully", token, user: newUser });
   } catch (error) {
     logger.log("error", `Error creating user: ${error?.message}`);
     return res.status(500).json({ error: error.message });
@@ -319,30 +272,11 @@ const sendPasswordResetOTP = async (req, res) => {
   try {
     const data = JSON.parse(req?.body?.data);
     const { email } = data;
-    if (email) {
-      //send OTP using model
-      const user = await User.findOne({ email: email });
-      const receiver = user?.email;
-      if (!receiver) {
-        return res.status(401).send({ message: "User doesn't exists" });
-      } else {
-        const otp = CreateOTP();
-        const savedOtp = await SaveOTP(receiver, otp);
-        if (!savedOtp) {
-          return res.status(401).send({ message: "Failed to send OTP" });
-        }
-        const subject = "Reset Your Password";
-        const code = otp;
-        const status = await SendEmail(receiver, subject, code);
-        if (!status?.code === 200) {
-          return res.status(401).send({ message: "User doesn't exists" });
-        }
-        logger.log("info", status);
-        logger.log("info", `Password reset OTP sent to: ${receiver}`);
-        return res
-          .status(200)
-          .send({ message: "Password reset OTP sent successfully" });
-      }
+    const result = await SendOTP({ email, Model: User });
+    if (result?.error) {
+      return res.status(401).send({ message: result?.error });
+    } else {
+      return res.status(200).send({ message: result?.message });
     }
   } catch (err) {
     logger.log("error", err?.message);
@@ -355,24 +289,12 @@ const validateUserPasswordByOTP = async (req, res) => {
   try {
     const data = JSON.parse(req?.body?.data);
     const { otp, email } = data;
-
-    // Check if the required fields are present in the request
-    if (!otp || !email) {
-      return res.status(400).send({ message: "All fields are required" });
-    }
-
-    //check if user exists
-    const user = await User.findOne({ email: email });
-    logger.log("info", JSON.stringify(user, null, 2));
-    if (!user) {
-      return res.status(404).send({ message: "User not found" });
-    }
-
-    const otpMatch = await MatchOTP(email, otp);
-    if (!otpMatch?.isMatch) {
-      return res.status(401).send({ message: otpMatch?.message });
+    const result = await ValidatePasswordResetOTP({ email, otp, Model: User });
+    console.log(result);
+    if (result?.error) {
+      return res.status(401).send({ message: result?.error });
     } else {
-      return res.status(200).send({ message: otpMatch?.message });
+      return res.status(200).send({ message: result?.message });
     }
   } catch (err) {
     logger.log("error", err?.message);
@@ -385,27 +307,18 @@ const updateUserPasswordByOTP = async (req, res) => {
   try {
     const data = JSON.parse(req?.body?.data);
     const { otp, email, newPassword } = data;
-
-    // Check if the required fields are present in the request
-    if (!otp || !email || !newPassword) {
-      return res.status(400).send({ message: "All fields are required" });
+    const otpStatus = await ValidatePasswordResetOTP({
+      email,
+      otp,
+      Model: User,
+    });
+    if (otpStatus?.error) {
+      logger.log("error", otpStatus?.error);
+      return res.status(401).send({ message: otpStatus?.error });
     }
-
-    //check if user exists
-    const user = await User.findOne({ email: email });
-    if (!user) {
-      return res.status(404).send({ message: "User not found" });
-    }
-
-    const otpMatch = await MatchOTP(email, otp);
-    if (!otpMatch?.isMatch) {
-      return res.status(401).send({ message: otpMatch?.message });
-    }
-
     let updateData = {};
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     updateData = { password: hashedPassword };
-
     //update password using model
     const result = await User.findOneAndUpdate(
       { email: email },

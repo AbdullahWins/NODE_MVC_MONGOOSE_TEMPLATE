@@ -2,31 +2,24 @@
 
 const { ObjectId } = require("mongodb");
 const bcrypt = require("bcrypt");
-const { SendEmail } = require("../services/emails/SendEmail");
 const { uploadMultipleFiles } = require("../services/uploaders/fileUploader");
-const { InitiateToken } = require("../services/tokens/InitiateToken");
 const Admin = require("../models/AdminModel");
-const { CreateOTP } = require("../services/otp/CreateOTP");
-const { SaveOTP } = require("../services/otp/SaveOTP");
-const { MatchOTP } = require("../services/otp/MatchOTP");
+const { SendOTP } = require("../services/otp/SendOTP");
 const { logger } = require("../services/loggers/Winston");
+const { ValidatePasswordResetOTP } = require("../services/otp/ValidateOTP");
 
 //login using mongoose
 const LoginAdmin = async (req, res) => {
   try {
     const data = JSON.parse(req?.body?.data);
     const { email, password } = data;
-    const admin = await Admin.findOne({ email: email }).exec();
-    logger.log("info", JSON.stringify(admin, null, 2));
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
+    const result = await Admin.login({ email, password });
+    if (result?.error) {
+      return res.status(401).json({ message: result?.error });
+    } else {
+      logger.log("info", `Admin logged in: ${email}`);
+      return res.json(result);
     }
-    const passwordMatch = await bcrypt.compare(password, admin?.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: "Invalid password" });
-    }
-    const token = InitiateToken(admin?._id, 30);
-    return res.json({ token, admin });
   } catch (error) {
     logger.log("error", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -37,34 +30,13 @@ const LoginAdmin = async (req, res) => {
 const RegisterAdmin = async (req, res) => {
   try {
     const { email, password } = JSON.parse(req?.body?.data);
-
-    // Check if the required fields are present in the request
-    if (!email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+    const result = await Admin.register({ email, password });
+    if (result?.error) {
+      return res.status(401).json({ message: result?.error });
+    } else {
+      logger.log("info", `Admin registered: ${email}`);
+      return res.status(201).json(result);
     }
-
-    // Check if the admin already exists
-    const existingAdminCheck = await Admin.findOne({ email: email }).exec();
-    if (existingAdminCheck) {
-      return res.status(409).json({ message: "Admin already exists" });
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create a new admin instance
-    const newAdmin = new Admin({
-      email,
-      password: hashedPassword,
-    });
-
-    // Save the admin to the database
-    await newAdmin.save();
-    //generate token
-    const token = InitiateToken(newAdmin?._id, 30);
-    return res
-      .status(201)
-      .json({ message: "Admin created successfully", token, admin: newAdmin });
   } catch (error) {
     logger.log("error", `Error creating admin: ${error?.message}`);
     return res.status(500).json({ error: error?.message });
@@ -161,34 +133,15 @@ const sendPasswordResetOTP = async (req, res) => {
   try {
     const data = JSON.parse(req?.body?.data);
     const { email } = data;
-    if (email) {
-      //send OTP using model
-      const admin = await Admin.findOne({ email: email });
-      const receiver = admin?.email;
-      if (!receiver) {
-        return res.status(401).send({ message: "Admin doesn't exists" });
-      } else {
-        const otp = CreateOTP();
-        const savedOtp = await SaveOTP(receiver, otp);
-        if (!savedOtp) {
-          return res.status(401).send({ message: "Failed to send OTP" });
-        }
-        const subject = "Reset Your Password";
-        const code = otp;
-        const status = await SendEmail(receiver, subject, code);
-        if (!status?.code === 200) {
-          return res.status(401).send({ message: "Admin doesn't exists" });
-        }
-        logger.log("info", status);
-        logger.log("info", `Password reset otp sent to: ${receiver}`);
-        return res
-          .status(200)
-          .send({ message: "Password reset otp sent successfully" });
-      }
+    const result = await SendOTP({ email, Model: Admin });
+    if (result?.error) {
+      return res.status(401).send({ message: result?.error });
+    } else {
+      return res.status(200).send({ message: result?.message });
     }
-  } catch (err) {
-    logger.log("error", err);
-    return res.status(500).send({ message: "Failed to reset admin password" });
+  } catch (error) {
+    logger.log("error", error?.message);
+    return res.status(500).send({ message: "Failed to send OTP" });
   }
 };
 
@@ -197,24 +150,12 @@ const validatePasswordResetOTP = async (req, res) => {
   try {
     const data = JSON.parse(req?.body?.data);
     const { otp, email } = data;
-    //validate inputs
-    if (!otp || !email) {
-      return res.status(400).send({ message: "All fields are required" });
-    }
-
-    //check if admin exists
-    const admin = await Admin.findOne({ email: email });
-    logger.log("info", JSON.stringify(admin, null, 2));
-
-    if (!admin) {
-      return res.status(404).send({ message: "Admin not found" });
-    }
-
-    const otpMatch = await MatchOTP(email, otp);
-    if (!otpMatch?.isMatch) {
-      return res.status(401).send({ message: otpMatch?.message });
+    const result = await ValidatePasswordResetOTP({ email, otp, Model: Admin });
+    console.log(result);
+    if (result?.error) {
+      return res.status(401).send({ message: result?.error });
     } else {
-      return res.status(200).send({ message: otpMatch?.message });
+      return res.status(200).send({ message: result?.message });
     }
   } catch (err) {
     logger.log("error", err);
@@ -227,24 +168,16 @@ const updateAdminPasswordByOTP = async (req, res) => {
   try {
     const data = JSON.parse(req?.body?.data);
     const { otp, email, newPassword } = data;
-    //validate inputs
-    if (!otp || !email || !newPassword) {
-      return res.status(400).send({ message: "All fields are required" });
+
+    const otpStatus = await ValidatePasswordResetOTP({
+      email,
+      otp,
+      Model: Admin,
+    });
+    if (otpStatus?.error) {
+      logger.log("error", otpStatus?.error);
+      return res.status(401).send({ message: otpStatus?.error });
     }
-
-    //check if admin exists
-    const admin = await Admin.findOne({ email: email });
-    logger.log("info", JSON.stringify(admin, null, 2));
-
-    if (!admin) {
-      return res.status(404).send({ message: "Admin not found" });
-    }
-
-    const otpMatch = await MatchOTP(email, otp);
-    if (!otpMatch?.isMatch) {
-      return res.status(401).send({ message: otpMatch?.message });
-    }
-
     let updateData = {};
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     updateData = { password: hashedPassword };
