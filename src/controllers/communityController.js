@@ -3,7 +3,6 @@
 const { ObjectId } = require("mongodb");
 const { Timekoto } = require("timekoto");
 const Community = require("../models/CommunityModel");
-const AccessValidator = require("../services/validators/AccessValidator");
 const User = require("../models/UserModel");
 const {
   uploadSingleFileUsingUrl,

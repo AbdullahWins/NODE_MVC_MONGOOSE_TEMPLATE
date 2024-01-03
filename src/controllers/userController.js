@@ -1,7 +1,6 @@
 // controllers/userController.js
 
 const { ObjectId } = require("mongodb");
-const bcrypt = require("bcrypt");
 const { uploadMultipleFiles } = require("../services/uploaders/fileUploader");
 const User = require("../models/UserModel");
 const AccessValidator = require("../services/validators/AccessValidator");
@@ -12,6 +11,7 @@ const { UserCleanup } = require("../services/userCleanup/UserCleanup");
 const { logger } = require("../services/loggers/Winston");
 const { SendOTP } = require("../services/otp/SendOTP");
 const { ValidatePasswordResetOTP } = require("../services/otp/ValidateOTP");
+const { hashPassword } = require("../services/encryptions/bcryptHandler");
 
 //login using mongoose
 const LoginUser = async (req, res) => {
@@ -237,7 +237,7 @@ const updateUserById = async (req, res) => {
     }
 
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await hashPassword(password);
       updateData = { ...updateData, password: hashedPassword };
     }
 
@@ -317,7 +317,7 @@ const updateUserPasswordByOTP = async (req, res) => {
       return res.status(401).send({ message: otpStatus?.error });
     }
     let updateData = {};
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await hashPassword(newPassword);
     updateData = { password: hashedPassword };
     //update password using model
     const result = await User.findOneAndUpdate(
@@ -353,12 +353,15 @@ const updateUserPasswordByOldPassword = async (req, res) => {
       return res.status(404).json({ message: "user not found" });
     }
 
-    const passwordMatch = await bcrypt.compare(oldPassword, user?.password);
+    const passwordMatch = await comparePasswords({
+      inputPassword: oldPassword,
+      hashedPassword: user?.password,
+    });
     if (!passwordMatch) {
       return res.status(401).json({ message: "Invalid password" });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await hashPassword(newPassword);
 
     const result = await User.findOneAndUpdate(
       { email: email },

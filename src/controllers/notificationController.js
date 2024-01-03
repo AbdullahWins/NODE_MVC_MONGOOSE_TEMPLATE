@@ -3,7 +3,6 @@
 const { ObjectId } = require("mongodb");
 const AccessValidator = require("../services/validators/AccessValidator");
 const Notification = require("../models/NotificationModel");
-const User = require("../models/UserModel");
 const { uploadMultipleFiles } = require("../services/uploaders/fileUploader");
 const { logger } = require("../services/loggers/Winston");
 
