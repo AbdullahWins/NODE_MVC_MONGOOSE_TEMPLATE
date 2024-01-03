@@ -1,0 +1,50 @@
+Author: https://github.com/abdullahwins
+
+//Admin
+router.get("/admins/find/:id", authorizeAdmin, getOneAdmin);
+router.get("/admins/all", authorizeAdmin, getAllAdmins);
+router.post("/admins/register", RegisterAdmin); = { email, password }
+router.post("/admins/login", LoginAdmin); = { email, password }
+router.post("/admins/send-otp", sendPasswordResetOTP); = { email }
+router.post("/admins/validate-otp", validatePasswordResetOTP); = { otp, email }
+router.patch("/admins/reset", updateAdminPasswordByOTP); = { otp, email, newPassword }
+router.patch("/admins/update/:id", authorizeAdmin, updateAdminById);
+router.patch("/admins/resetpassword/:email", updateAdminPasswordByOldPassword); = { oldPassword, newPassword }
+router.delete("/admins/delete/:id", authorizeAdmin, deleteAdminById);
+
+//User
+router.get("/users/find/:id", authorizeUserOrAdmin, getOneUser);
+router.get("/users/all", authorizeAdmin, getAllUsers);
+router.post("/users/login", LoginUser); = { email, password }
+router.post("/users/register", RegisterUser); = { email, password }
+router.post("/users/send-otp", sendPasswordResetOTP); = { email }
+router.post("/users/validate-otp", validateUserPasswordByOTP); = { otp, email }
+router.patch("/users/reset", updateUserPasswordByOTP); = { otp, email, newPassword }
+router.patch("/users/update/:id", authorizeUserOrAdmin, updateUserById);
+router.patch("/users/toggle-like/:id", authorizeUserOrAdmin, addOneLike); = { wallpaperId, actionType }
+router.patch("/users/resetpassword/:email", updateUserPasswordByOldPassword); = { oldPassword, newPassword }
+router.delete("/users/delete/:id", authorizeUserOrAdmin, deleteUserById);
+
+//Community
+router.get("/community-images/all", authorizeUserOrAdmin, getAllCommunityImages);
+router.get("/community-images/find/:id", authorizeUserOrAdmin, getOneCommunityImage);
+router.get("/community-images/users/:userId", authorizeUserOrAdmin, getCommunityImagesByUser);
+router.post("/community-images/add", authorizeUserOrAdmin, addOneCommunityImage); = { authorId, authorName, authorEmail, wallpaperName } { files }
+router.patch("/community-images/add-views/:id", authorizeUserOrAdmin, updateViewCounter);
+router.patch("/community-images/add-downloads/:id", authorizeUserOrAdmin, updateDownloadCounter);
+router.delete("/community-images/delete/:id", authorizeUserOrAdmin, deleteOneCommunityImageById);
+
+//PaymentPerDownload
+router.get("/ppd/get", authorizeAdmin, getPPD);
+router.post("/ppd/add", authorizeAdmin, addOrUpdatePPD); = { name, description, amount }
+router.delete("/ppd/delete", authorizeAdmin, deletePPD);
+
+//Payouts
+router.get("/payouts/all", authorizeAdmin, getAllPayouts);
+router.get("/payouts/pending", authorizeAdmin, getAllPendingPayouts);
+router.get("/payouts/approved", authorizeAdmin, getAllApprovedPayouts);
+router.get("/payouts/find/:id", authorizeAdmin, getOnePayout);
+router.get("/payouts/user/:userId", authorizeAdmin, getPayoutsByUser);
+router.post("/payouts/add/:userId", authorizeUserOrAdmin, addOnePayout); = { userId, country, fullName, contact, address, bankName, bankAccountNumber, notes }
+router.patch("/payouts/approve/:id", authorizeAdmin, updateOnePayout);
+router.delete("/payouts/delete/:id", authorizeAdmin, deleteOnePayoutById);

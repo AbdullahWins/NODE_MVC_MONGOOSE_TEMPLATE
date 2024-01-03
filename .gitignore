@@ -1,0 +1,6 @@
+node_modules
+.env
+vectorDatabase
+uploads
+geniepers.zip
+logs
