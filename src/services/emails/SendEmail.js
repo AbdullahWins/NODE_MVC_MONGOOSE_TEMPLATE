@@ -24,7 +24,7 @@ const SendEmail = async (receiver, subject, code) => {
     const formattedEmail = emailTemplate.replace("{{code}}", code);
 
     const info = await transporter.sendMail({
-      from: `"Geniepers" <${process.env.SENDER_EMAIL_ID}>`,
+      from: `"${process.env.SENDER_EMAIL_NAME}" <${process.env.SENDER_EMAIL_ID}>`,
       to: receiver,
       subject: subject,
       html: formattedEmail,

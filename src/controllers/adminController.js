@@ -5,7 +5,7 @@ const { uploadMultipleFiles } = require("../services/uploaders/fileUploader");
 const Admin = require("../models/AdminModel");
 const { SendOTP } = require("../services/otp/SendOTP");
 const { logger } = require("../services/loggers/Winston");
-const { ValidatePasswordResetOTP } = require("../services/otp/ValidateOTP");
+const { ValidatePasswordResetOTP } = require("../services/otp/ValidatePasswordResetOTP");
 const {
   hashPassword,
   comparePasswords,

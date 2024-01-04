@@ -7,11 +7,14 @@ const AccessValidator = require("../services/validators/AccessValidator");
 const {
   uploadMultipleFilesUsingUrls,
 } = require("../services/uploaders/fileUploaderUsingUrl");
-const { UserCleanup } = require("../services/userCleanup/UserCleanup");
+const { UserCleanup } = require("../services/dataCleanups/UserCleanup");
 const { logger } = require("../services/loggers/Winston");
 const { SendOTP } = require("../services/otp/SendOTP");
-const { ValidatePasswordResetOTP } = require("../services/otp/ValidateOTP");
+const {
+  ValidatePasswordResetOTP,
+} = require("../services/otp/ValidatePasswordResetOTP");
 const { hashPassword } = require("../services/encryptions/bcryptHandler");
+const { ValidObjectId } = require("../services/validators/ValidObjectId");
 
 //login using mongoose
 const LoginUser = async (req, res) => {
@@ -63,8 +66,7 @@ const getOneUser = async (req, res) => {
     const userId = req?.params?.id;
 
     //object id validation
-    if (!ObjectId.isValid(userId)) {
-      logger.log("error", `Invalid ObjectId: ${userId}`);
+    if (!ValidObjectId(userId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -135,9 +137,8 @@ const addOneLike = async (req, res) => {
 const addOneWallpaperToMyWallpapers = async (req, res) => {
   try {
     const userId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(userId)) {
-      logger.log("error", `Invalid ObjectId: ${userId}`);
+    //object id validation
+    if (!ValidObjectId(userId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -173,9 +174,8 @@ const addOneWallpaperToMyWallpapers = async (req, res) => {
 const removeOneWallpaperToMyWallpapers = async (req, res) => {
   try {
     const userId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(userId)) {
-      logger.log("error", `Invalid ObjectId: ${userId}`);
+    //object id validation
+    if (!ValidObjectId(userId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -208,9 +208,8 @@ const removeOneWallpaperToMyWallpapers = async (req, res) => {
 const updateUserById = async (req, res) => {
   try {
     const id = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(id)) {
-      logger.log("error", `Invalid ObjectId: ${id}`);
+    //object id validation
+    if (!ValidObjectId(id)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -382,8 +381,7 @@ const deleteUserById = async (req, res) => {
   try {
     const id = req?.params?.id;
     //object id validation
-    if (!ObjectId.isValid(id)) {
-      logger.log("error", `Invalid ObjectId: ${id}`);
+    if (!ValidObjectId(id)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 

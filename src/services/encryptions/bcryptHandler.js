@@ -1,15 +1,16 @@
 const bcrypt = require("bcrypt");
+const { logger } = require("../loggers/Winston");
 
 const hashPassword = async (password) => {
   try {
     const saltRounds = 10;
     const stringPassword = password.toString();
     const hashedPassword = await bcrypt.hash(stringPassword, saltRounds);
-    console.log(hashedPassword);
-    return { success: true, hashedPassword };
+    logger.log("info", "Password hashed successfully");
+    return hashedPassword;
   } catch (error) {
-    console.error(error);
-    return { success: false, message: "Failed to hash password!" };
+    logger.log("error", error?.message);
+    return null;
   }
 };
 
@@ -22,13 +23,13 @@ const comparePasswords = async ({ inputPassword, hashedPassword }) => {
       stringHashedPassword
     );
     if (!passwordMatch) {
-      return { success: false, message: "Invalid password!" };
+      return false;
     } else {
-      return { success: true, message: "Password matched!" };
+      return true;
     }
   } catch (error) {
-    console.error(error);
-    return { success: false, message: "Failed to compare passwords" };
+    logger.log("error", error?.message);
+    return false;
   }
 };
 
