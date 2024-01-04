@@ -32,6 +32,7 @@ const LoginUser = async (req, res) => {
   }
 };
 
+
 //register using mongoose
 const RegisterUser = async (req, res) => {
   try {
