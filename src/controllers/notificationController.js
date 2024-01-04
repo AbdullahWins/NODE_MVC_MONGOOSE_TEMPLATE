@@ -1,6 +1,5 @@
 // Controllers/NotificationController.js
 
-const { ObjectId } = require("mongodb");
 const AccessValidator = require("../services/validators/AccessValidator");
 const Notification = require("../models/NotificationModel");
 const { uploadMultipleFiles } = require("../services/uploaders/fileUploader");
@@ -27,8 +26,7 @@ const getOneNotification = async (req, res) => {
   try {
     const notificationId = req?.params?.id;
     //object id validation
-    if (!ObjectId.isValid(notificationId)) {
-      logger.log("error", `Invalid ObjectId: ${notificationId}`);
+    if (!ValidObjectId(notificationId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -101,9 +99,8 @@ const addOneNotification = async (req, res) => {
 const deleteOneNotificationById = async (req, res) => {
   try {
     const notificationId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(notificationId)) {
-      logger.log("error", `Invalid ObjectId: ${notificationId}`);
+    //object id validation
+    if (!ValidObjectId(notificationId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 

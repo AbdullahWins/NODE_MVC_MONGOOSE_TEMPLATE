@@ -1,15 +1,17 @@
 // controllers/AdminController.js
 
-const { ObjectId } = require("mongodb");
 const { uploadMultipleFiles } = require("../services/uploaders/fileUploader");
 const Admin = require("../models/AdminModel");
 const { SendOTP } = require("../services/otp/SendOTP");
 const { logger } = require("../services/loggers/Winston");
-const { ValidatePasswordResetOTP } = require("../services/otp/ValidatePasswordResetOTP");
+const {
+  ValidatePasswordResetOTP,
+} = require("../services/otp/ValidatePasswordResetOTP");
 const {
   hashPassword,
   comparePasswords,
 } = require("../services/encryptions/bcryptHandler");
+const { ValidObjectId } = require("../services/validators/ValidObjectId");
 
 //login using mongoose
 const LoginAdmin = async (req, res) => {
@@ -61,10 +63,8 @@ const getAllAdmins = async (req, res) => {
 const getOneAdmin = async (req, res) => {
   try {
     const adminId = req?.params?.id;
-
     //object id validation
-    if (!ObjectId.isValid(adminId)) {
-      logger.log("error", `Invalid ObjectId: ${adminId}`);
+    if (!ValidObjectId(adminId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -87,11 +87,11 @@ const getOneAdmin = async (req, res) => {
 const updateAdminById = async (req, res) => {
   try {
     const id = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(id)) {
-      logger.log("error", `Invalid ObjectId: ${id}`);
+    //object id validation
+    if (!ValidObjectId(id)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
+
     const { files } = req;
     const data = req?.body?.data ? JSON.parse(req?.body?.data) : {};
     const { password, ...additionalData } = data;
@@ -248,8 +248,7 @@ const deleteAdminById = async (req, res) => {
   try {
     const id = req?.params?.id;
     //object id validation
-    if (!ObjectId.isValid(id)) {
-      logger.log("error", `Invalid ObjectId: ${id}`);
+    if (!ValidObjectId(id)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 

@@ -1,9 +1,7 @@
-// routes/userRoutes.js
 const router = require("express").Router();
 const {
   getPPD,
   addOrUpdatePPD,
-  updatePPD,
   deletePPD,
 } = require("../controllers/paymentPerDownloadController");
 const { authorizeAdmin } = require("../middlewares/AuthorizeAdmin");

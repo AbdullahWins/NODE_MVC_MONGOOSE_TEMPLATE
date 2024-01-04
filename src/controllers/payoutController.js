@@ -1,10 +1,10 @@
 // Controllers/PayoutController.js
 
-const { ObjectId } = require("mongodb");
 const AccessValidator = require("../services/validators/AccessValidator");
 const Payout = require("../models/PayoutModel");
 const User = require("../models/UserModel");
 const { logger } = require("../services/loggers/Winston");
+const { ValidObjectId } = require("../services/validators/ValidObjectId");
 
 //get all payouts using mongoose
 const getAllPayouts = async (req, res) => {
@@ -61,8 +61,7 @@ const getOnePayout = async (req, res) => {
   try {
     const payoutId = req?.params?.id;
     //object id validation
-    if (!ObjectId.isValid(payoutId)) {
-      logger.log("error", `Invalid ObjectId: ${payoutId}`);
+    if (!ValidObjectId(payoutId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -87,10 +86,8 @@ const getOnePayout = async (req, res) => {
 const getPayoutsByUser = async (req, res) => {
   try {
     const userId = req?.params?.userId;
-
     //object id validation
-    if (!ObjectId.isValid(userId)) {
-      logger.log("error", `Invalid ObjectId: ${userId}`);
+    if (!ValidObjectId(userId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -200,9 +197,8 @@ const addOnePayout = async (req, res) => {
 const approveOnePayout = async (req, res) => {
   try {
     const payoutId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(payoutId)) {
-      logger.log("error", `Invalid ObjectId: ${payoutId}`);
+    //object id validation
+    if (!ValidObjectId(payoutId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
     const payoutStatus = "approved";
@@ -267,9 +263,8 @@ const approveOnePayout = async (req, res) => {
 const cancelOnePayout = async (req, res) => {
   try {
     const payoutId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(payoutId)) {
-      logger.log("error", `Invalid ObjectId: ${payoutId}`);
+    //object id validation
+    if (!ValidObjectId(payoutId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
     const payoutStatus = "cancelled";
@@ -321,9 +316,8 @@ const cancelOnePayout = async (req, res) => {
 const deleteOnePayoutById = async (req, res) => {
   try {
     const payoutId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(payoutId)) {
-      logger.log("error", `Invalid ObjectId: ${payoutId}`);
+    //object id validation
+    if (!ValidObjectId(payoutId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 

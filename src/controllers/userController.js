@@ -1,6 +1,5 @@
 // controllers/userController.js
 
-const { ObjectId } = require("mongodb");
 const { uploadMultipleFiles } = require("../services/uploaders/fileUploader");
 const User = require("../models/UserModel");
 const AccessValidator = require("../services/validators/AccessValidator");
@@ -99,9 +98,8 @@ const getOneUser = async (req, res) => {
 const addOneLike = async (req, res) => {
   try {
     const userId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(userId)) {
-      logger.log("error", `Invalid ObjectId: ${userId}`);
+    //object id validation
+    if (!ValidObjectId(userId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 

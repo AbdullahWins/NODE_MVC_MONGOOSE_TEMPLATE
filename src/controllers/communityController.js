@@ -1,6 +1,5 @@
 // Controllers/CommunityImageController.js
 
-const { ObjectId } = require("mongodb");
 const { Timekoto } = require("timekoto");
 const Community = require("../models/CommunityModel");
 const User = require("../models/UserModel");
@@ -8,6 +7,7 @@ const {
   uploadSingleFileUsingUrl,
 } = require("../services/uploaders/fileUploaderUsingUrl");
 const { logger } = require("../services/loggers/Winston");
+const { ValidObjectId } = require("../services/validators/ValidObjectId");
 
 //get all CommunityImage using mongoose
 const getAllCommunityImages = async (req, res) => {
@@ -30,8 +30,7 @@ const getOneCommunityImage = async (req, res) => {
   try {
     const communityImageId = req?.params?.id;
     //object id validation
-    if (!ObjectId.isValid(communityImageId)) {
-      logger.log("error", `Invalid ObjectId: ${communityImageId}`);
+    if (!ValidObjectId(communityImageId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -99,8 +98,7 @@ const getCommunityImagesByUser = async (req, res) => {
   try {
     const userId = req?.params?.userId;
     //object id validation
-    if (!ObjectId.isValid(userId)) {
-      logger.log("error", `Invalid ObjectId: ${userId}`);
+    if (!ValidObjectId(userId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -170,11 +168,11 @@ const updateOneCommunityImage = async (req, res) => {
   try {
     const communityImageId = req?.params?.id;
     const data = req?.body?.data ? JSON.parse(req?.body?.data) : {};
-    // Object ID validation
-    if (!ObjectId.isValid(communityImageId)) {
-      logger.log("error", `Invalid ObjectId: ${communityImageId}`);
+    //object id validation
+    if (!ValidObjectId(communityImageId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
+
     const updatedData = { ...data };
 
     const updatedCommunityImage = await Community.findOneAndUpdate(
@@ -206,9 +204,8 @@ const updateOneCommunityImage = async (req, res) => {
 const updateViewCounter = async (req, res) => {
   try {
     const communityImageId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(communityImageId)) {
-      logger.log("error", `Invalid ObjectId: ${communityImageId}`);
+    //object id validation
+    if (!ValidObjectId(communityImageId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -235,9 +232,8 @@ const updateViewCounter = async (req, res) => {
 const addDownloadCounter = async (req, res) => {
   try {
     const communityImageId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(communityImageId)) {
-      logger.log("error", `Invalid ObjectId: ${communityImageId}`);
+    //object id validation
+    if (!ValidObjectId(communityImageId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -283,9 +279,8 @@ const addDownloadCounter = async (req, res) => {
 const removeDownloadCounter = async (req, res) => {
   try {
     const communityImageId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(communityImageId)) {
-      logger.log("error", `Invalid ObjectId: ${communityImageId}`);
+    //object id validation
+    if (!ValidObjectId(communityImageId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -331,9 +326,8 @@ const removeDownloadCounter = async (req, res) => {
 const deleteOneCommunityImageById = async (req, res) => {
   try {
     const communityImageId = req?.params?.id;
-    // Object ID validation
-    if (!ObjectId.isValid(communityImageId)) {
-      logger.log("error", `Invalid ObjectId: ${communityImageId}`);
+    //object id validation
+    if (!ValidObjectId(communityImageId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
