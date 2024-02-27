@@ -4,7 +4,10 @@ const connectToDatabase = async () => {
   const uri = `${process.env.MONGOOSE_URI}/${process.env.DATABASE_NAME}`;
 
   try {
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, {
+      // Specify the write concern mode
+      writeConcern: { w: "majority" },
+    });
     console.log("Connected to MongoDB using Mongoose!");
   } catch (error) {
     console.error(
